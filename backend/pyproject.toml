@@ -9,5 +9,6 @@ dependencies = [
     "langchain-openai>=1.1.9",
     "langgraph-checkpoint-sqlite>=3.0.3",
     "openai>=2.20.0",
+    "pandas>=3.0.0",
     "python-dotenv>=1.2.1",
 ]
