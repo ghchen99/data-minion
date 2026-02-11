@@ -1,5 +1,6 @@
 - [ ] Initial query reformulation
-- [ ] Better validation for code gen and execution with retries
+- [ ] Split single python code gen into multiple steps for auditability, engineeering > analysis > visuals > reporting
+- [ ] Better validation for code gen and execution with retries (consider parallel + aggregate?)
 - [ ] Better data storage structure, datasets > threads > artifacts
 - [ ] Convert static runs into dynamic API
 - [ ] Create frontend
