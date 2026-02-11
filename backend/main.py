@@ -86,6 +86,7 @@ Write Python code that modifies the DataFrame `df` to accomplish the following:
 - Do not return anything.
 - Use pandas.
 - Do not print anything.
+- Do NOT include any markdown backticks in your output.
 """
 
     writer({"status": "LLM call started for python code generation..."})
@@ -94,7 +95,20 @@ Write Python code that modifies the DataFrame `df` to accomplish the following:
     response = await model.ainvoke([{"role": "user", "content": llm_prompt}])
 
     writer({"status": "LLM call finished"})
-    return {"python_code": response.content}
+
+    # Strip markdown backticks if they exist
+    code = response.content.strip()
+    if code.startswith("```") and code.endswith("```"):
+        # Remove first line if it contains ```python
+        lines = code.splitlines()
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines[-1].startswith("```"):
+            lines = lines[:-1]
+        code = "\n".join(lines)
+
+    return {"python_code": code}
+
 
 
 async def execute_python_code(state: DatasetAgentState) -> Dict:
