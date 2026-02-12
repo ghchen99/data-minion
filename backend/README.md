@@ -44,8 +44,8 @@ This system transforms user requests into executable data workflows by:
           │                           │
           │                    ┌──────▼───────┐
           │                    │ Execute      │ ── Run code
-          │                    │ Code         │    safely
-          │                    └──────┬───────┘
+          │                    │ Code         │    Create intermediate
+          │                    └──────┬───────┘    artifact (no overwrite)
           │                           │
           │                    ┌──────▼───────┐
           │              ┌─────┤ Validate     │ ── Check schema
@@ -75,8 +75,8 @@ This system transforms user requests into executable data workflows by:
          No
           │
     ┌─────▼─────────────┐
-    │ Register          │ ── Save artifacts
-    │ Artifacts         │    with metadata
+    │ Register          │ ── Save final artifact
+    │ Artifacts         │    with full lineage
     └─────┬─────────────┘
           │
     ┌─────▼─────────────┐
@@ -111,9 +111,10 @@ class DatasetAgentState(TypedDict):
     schema_validation: SchemaChange  # Detected changes
     
     # Artifacts
+    artifact_id: str                 # Current working artifact (updated each step)
     new_artifact_ids: List[str]      # All generated artifacts
     tool_history: List[Dict]         # Complete execution log
-    intermediate_artifacts: List[str] # Charts, reports, etc.
+    intermediate_artifacts: List[str] # Intermediate data + charts
 ```
 
 #### 2. **Structured Planning**
@@ -149,6 +150,27 @@ class SchemaChange(BaseModel):
     dtypes_changed: Dict[str, str]
     row_count_change: int
     is_intentional: bool             # LLM validates intent
+```
+
+#### 5. **Intermediate Artifact Management** ⭐ NEW
+- **No Overwriting**: Each transformation step creates a NEW intermediate artifact
+- **Chain of Custody**: State's `artifact_id` is updated to point to the latest intermediate artifact
+- **Full Lineage**: All intermediate artifacts are tracked in `intermediate_artifacts` list
+- **Final Registration**: The last intermediate artifact is copied to create the final registered artifact
+
+**Artifact Flow Example:**
+```
+base_artifact (20 rows, 5 cols)
+    ↓ Step 1: Clean nulls
+intermediate_abc123 (17 rows, 5 cols)  ← Created, not overwritten
+    ↓ Step 2: Add category column
+intermediate_def456 (17 rows, 6 cols)  ← Created, not overwritten
+    ↓ Step 3: Aggregate
+intermediate_ghi789 (9 rows, 3 cols)   ← Created, not overwritten
+    ↓ Register
+final_artifact (9 rows, 3 cols)        ← Copy with full metadata
+
+Result: base_artifact remains unchanged at 20 rows!
 ```
 
 ## 📊 Example Workflows
@@ -207,6 +229,8 @@ and product to calculate total sales, average sales, and count."
 df = df.dropna(subset=['name', 'sales'])
 ```
 
+**Intermediate Artifact Created:** `intermediate_a1b2c3d4` (17 rows, 5 columns)
+
 **Generated Code (Step 2 + 3):**
 ```python
 # Group by region and product, calculate aggregations
@@ -217,26 +241,43 @@ df = df.groupby(['region', 'product']).agg(
 ).reset_index()
 ```
 
+**Intermediate Artifacts Created:** 
+- `intermediate_e5f6g7h8` (after grouping)
+- `intermediate_i9j0k1l2` (after aggregation)
+
 **Output:**
 ```
 ✓ Task completed successfully
 ✓ Executed 3 steps
-✓ Final dataset: 7 rows × 8 columns
-✓ Generated 1 artifacts
-  - Added columns: average_sales, total_sales, count_entries
+✓ Final dataset: 7 rows × 5 columns
+✓ Generated final artifact: artifact_41dd3154
+  - Added columns: total_sales, average_sales, count_entries
+  - Row count change: -13 (from 20 to 7)
 
 Preview:
-┌────────┬─────────┬─────────────┬───────────────┬───────────────┐
-│ region │ product │ total_sales │ average_sales │ count_entries │
-├────────┼─────────┼─────────────┼───────────────┼───────────────┤
-│ East   │ A       │ 300.0       │ 300.0         │ 1             │
-│ East   │ B       │ 450.0       │ 450.0         │ 1             │
-│ North  │ A       │ 140.0       │ 140.0         │ 1             │
-│ North  │ B       │ 220.0       │ 110.0         │ 2             │
-│ South  │ C       │ 290.0       │ 145.0         │ 2             │
-│ West   │ A       │ 240.0       │ 120.0         │ 2             │
-│ West   │ C       │ 210.0       │ 210.0         │ 1             │
-└────────┴─────────┴─────────────┴───────────────┴───────────────┘
+[
+  {
+    "region": "East",
+    "product": "A",
+    "total_sales": 300.0,
+    "average_sales": 300.0,
+    "count_entries": 1
+  },
+  {
+    "region": "East",
+    "product": "B",
+    "total_sales": 450.0,
+    "average_sales": 450.0,
+    "count_entries": 1
+  },
+  {
+    "region": "North",
+    "product": "A",
+    "total_sales": 140.0,
+    "average_sales": 140.0,
+    "count_entries": 1
+  }
+]
 ```
 
 ### Example 2: Feature Engineering + Visualization
@@ -254,13 +295,27 @@ the count of each category by region."
   "steps": [
     {
       "step_id": "1",
+      "description": "Handle missing values in 'sales' column",
+      "task_type": "cleaning",
+      "requires_code": true,
+      "requires_visualization": false
+    },
+    {
+      "step_id": "2",
       "description": "Create 'sales_category' column with Low/Medium/High labels",
       "task_type": "feature_engineering",
       "requires_code": true,
       "requires_visualization": false
     },
     {
-      "step_id": "2",
+      "step_id": "3",
+      "description": "Aggregate counts by region and sales_category",
+      "task_type": "aggregation",
+      "requires_code": true,
+      "requires_visualization": false
+    },
+    {
+      "step_id": "4",
       "description": "Create bar chart of sales categories by region",
       "task_type": "visualization",
       "requires_code": true,
@@ -270,7 +325,13 @@ the count of each category by region."
 }
 ```
 
-**Generated Code (Step 1):**
+**Intermediate Artifacts Created:**
+- `intermediate_abc123` (after cleaning nulls)
+- `intermediate_def456` (after adding sales_category column)
+- `intermediate_ghi789` (after aggregation - 9 rows)
+- `chart_xyz789` (visualization, no data change)
+
+**Generated Code (Step 2):**
 ```python
 import numpy as np
 
@@ -287,17 +348,18 @@ def categorize_sales(value):
 df['sales_category'] = df['sales'].apply(categorize_sales)
 ```
 
-**Generated Code (Step 2):**
+**Generated Code (Step 4):**
 ```python
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Count sales categories by region
-category_counts = df.groupby(['region', 'sales_category']).size().unstack(fill_value=0)
+sns.set_theme(style="whitegrid")
 
-# Create bar chart
+# Create grouped bar chart
 fig, ax = plt.subplots(figsize=(10, 6))
-category_counts.plot(kind='bar', ax=ax, color=['#ff6b6b', '#ffd93d', '#6bcf7f'])
+pivot_data = df.pivot(index='region', columns='sales_category', values='count')
+pivot_data.plot(kind='bar', ax=ax, color=['#ff6b6b', '#ffd93d', '#6bcf7f'])
+
 ax.set_title('Sales Category Distribution by Region', fontsize=14, fontweight='bold')
 ax.set_xlabel('Region', fontsize=12)
 ax.set_ylabel('Count', fontsize=12)
@@ -309,11 +371,31 @@ plt.tight_layout()
 **Output:**
 ```
 ✓ Task completed successfully
-✓ Executed 2 steps
-✓ Final dataset: 20 rows × 6 columns
-✓ Generated 2 artifacts (1 dataset + 1 chart)
+✓ Executed 4 steps
+✓ Final dataset: 9 rows × 3 columns
+✓ Generated final artifact: artifact_ef3861b5
+✓ Generated 1 visualization(s)
   - Added columns: sales_category
-  - Chart saved: chart_a4f5b2c1.png
+  - Chart saved: chart_6259eb2b.png
+
+Preview:
+[
+  {
+    "region": "East",
+    "sales_category": "High",
+    "count": 3
+  },
+  {
+    "region": "East",
+    "sales_category": "Low",
+    "count": 1
+  },
+  {
+    "region": "East",
+    "sales_category": "Medium",
+    "count": 1
+  }
+]
 ```
 
 ### Example 3: Error Recovery in Action
@@ -348,6 +430,7 @@ print(f"Correlation: {correlation}")
 ✓ Step complete after 1 retry
 ✓ Task completed successfully
 ✓ Code auto-fixed: converted date strings to numeric values
+✓ Created intermediate artifact: intermediate_m4n5o6p7
 ```
 
 ### Example 4: Explanation-Only Task
@@ -481,13 +564,17 @@ save_json(dataset_meta, os.path.join(DATASET_DIR, f"{dataset_id}.json"))
 data_agent_storage/
 ├── datasets/
 │   ├── ds_12345abc.json              # Dataset metadata
-│   └── ds_12345abc_original.csv      # Original data
+│   └── ds_12345abc_original.csv      # Original data (never modified)
 │
 ├── artifacts/
-│   ├── artifact_abc123.csv           # Base artifact
+│   ├── artifact_abc123.csv           # Base artifact (never modified)
 │   ├── artifact_abc123.json          # Base metadata
-│   ├── artifact_def456.csv           # Derived artifact
-│   └── artifact_def456.json          # Derived metadata (with lineage)
+│   ├── intermediate_def456.csv       # Step 1 output
+│   ├── intermediate_def456.json      # Step 1 metadata
+│   ├── intermediate_ghi789.csv       # Step 2 output
+│   ├── intermediate_ghi789.json      # Step 2 metadata
+│   ├── artifact_final123.csv         # Final registered artifact
+│   └── artifact_final123.json        # Final metadata (with lineage)
 │
 ├── python_code/
 │   ├── artifact_abc123_1.py          # Step 1 code
@@ -506,60 +593,67 @@ data_agent_storage/
 
 ```json
 {
-  "id": "artifact_41dd3154",
-  "dataset_id": "ds_e356613c",
+  "id": "artifact_ef3861b5",
+  "dataset_id": "ds_6d32f7ab",
   "thread_id": "thread_123",
   "type": "derived_dataset",
-  "created_at": "2026-02-12T10:30:45.123456Z",
-  "lineage": ["artifact_e356613c"],
+  "created_at": "2026-02-12T22:20:38.164974+00:00",
+  "lineage": [
+    "intermediate_a1b2c3d4",
+    "intermediate_e5f6g7h8", 
+    "intermediate_i9j0k1l2"
+  ],
   "transformation_type": "multi_step_plan",
-  "plan_summary": "Remove rows where 'name' or 'sales' is missing, then group by 'region' and 'product' to calculate total sales, average sales, and count.",
-  "steps_executed": ["1", "2", "3"],
+  "plan_summary": "Create a new column 'sales_category' based on the 'sales' column values, then generate a bar chart showing the count of each 'sales_category' by 'region'.",
+  "steps_executed": ["1", "2", "3", "4"],
   "tool_history": [
     {
       "step_id": "1",
       "tool": "pandas",
-      "code_file": "/path/to/artifact_e356613c_1.py",
-      "code_hash": "55d08bf4add63405",
-      "timestamp": "2026-02-12T10:30:46.789Z"
+      "code_file": "data_agent_storage\\python_code\\artifact_d7946812_1.py",
+      "code_hash": "dea0b0732c10eb06",
+      "timestamp": "2026-02-12T22:19:24.889107+00:00"
     },
     {
       "step_id": "2",
       "tool": "pandas",
-      "code_file": "/path/to/artifact_e356613c_2.py",
-      "code_hash": "5d06d1394087c041",
-      "timestamp": "2026-02-12T10:30:48.234Z"
+      "code_file": "data_agent_storage\\python_code\\artifact_d7946812_2.py",
+      "code_hash": "6773c1de94b7b09c",
+      "timestamp": "2026-02-12T22:19:48.273938+00:00"
     },
     {
       "step_id": "3",
       "tool": "pandas",
-      "code_file": "/path/to/artifact_e356613c_3.py",
-      "code_hash": "af178c451cf50db9",
-      "timestamp": "2026-02-12T10:30:49.678Z"
+      "code_file": "data_agent_storage\\python_code\\artifact_d7946812_3.py",
+      "code_hash": "b47061696d8fe7a3",
+      "timestamp": "2026-02-12T22:20:08.280070+00:00"
+    },
+    {
+      "step_id": "4",
+      "tool": "visualization",
+      "code_file": "data_agent_storage\\python_code\\artifact_d7946812_4.py",
+      "code_hash": "68a0c1c2aa7ceab1",
+      "timestamp": "2026-02-12T22:20:37.945937+00:00"
     }
   ],
   "schema": {
-    "columns": ["region", "product", "total_sales", "average_sales", "count_entries"],
+    "columns": ["region", "sales_category", "count"],
     "dtypes": {
-      "region": "object",
-      "product": "object",
-      "total_sales": "float64",
-      "average_sales": "float64",
-      "count_entries": "int64"
+      "region": "str",
+      "sales_category": "str",
+      "count": "int64"
     },
-    "row_count": 7,
+    "row_count": 9,
     "null_counts": {
       "region": 0,
-      "product": 0,
-      "total_sales": 0,
-      "average_sales": 0,
-      "count_entries": 0
+      "sales_category": 0,
+      "count": 0
     }
   },
   "metadata": {
-    "rows": 7,
-    "columns": 5,
-    "plan_steps": 3
+    "rows": 9,
+    "columns": 3,
+    "plan_steps": 4
   }
 }
 ```
@@ -592,7 +686,7 @@ REPORT_DIR = os.path.join(BASE_STORAGE_DIR, "reports")
 
 ```python
 model = init_chat_model(
-    "azure_openai:gpt-4.1",
+    "azure_openai:gpt-4o",
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
     temperature=0,  # Deterministic for code generation
 )
@@ -606,19 +700,25 @@ model = init_chat_model(
 - Monitors row count changes
 - LLM confirms intentionality
 
-### 2. **Code Sandboxing**
+### 2. **Artifact Immutability** ⭐ NEW
+- **Original artifacts never modified**: Base datasets remain pristine
+- **Copy-on-write**: Each transformation creates a new intermediate artifact
+- **State tracking**: `artifact_id` in state always points to latest version
+- **Full lineage**: Complete chain from base → intermediate → final
+
+### 3. **Code Sandboxing**
 - Executes in isolated namespace
 - No file system access from generated code
 - No network calls
 - Limited to pandas/matplotlib operations
 
-### 3. **Error Boundaries**
+### 4. **Error Boundaries**
 - Try-catch around all code execution
-- Maximum retry limits
+- Maximum retry limits (2 per step)
 - Graceful degradation
 - Comprehensive error logging
 
-### 4. **Reproducibility**
+### 5. **Reproducibility**
 - Code hash for each execution
 - Complete lineage tracking
 - Timestamped operations
@@ -630,14 +730,32 @@ model = init_chat_model(
 2. **Evaluator-Optimizer**: Validate → Fix → Retry loop
 3. **Routing**: Conditional branching based on task classification
 4. **State Machine**: Explicit state transitions with checkpointing
+5. **Copy-on-Write**: Immutable artifacts with versioned transformations
 
 ## 📈 Performance Characteristics
 
 - **Planning Overhead**: ~2-3 seconds for complex multi-step tasks
 - **Code Generation**: ~1-2 seconds per step
 - **Execution**: Depends on data size and operation
+- **Artifact I/O**: ~0.1-0.5 seconds per intermediate save (overhead justified by safety)
 - **Error Recovery**: Adds ~3-5 seconds per retry
-- **Total Time**: Typically 10-30 seconds for 3-5 step workflows
+- **Total Time**: Typically 15-40 seconds for 3-5 step workflows
+
+## 🐛 Bug Fixes
+
+### v1.1.0 - Intermediate Artifact Fix
+**Issue**: Original artifacts were being overwritten by each transformation step, resulting in loss of intermediate states and making the base artifact contain final transformed data.
+
+**Root Cause**: `execute_python_code()` was saving transformed DataFrames back to the same `artifact_id` that was loaded as input.
+
+**Fix**: 
+- Each data transformation step now creates a NEW `intermediate_xxxxx` artifact
+- State's `artifact_id` is updated to point to the new intermediate artifact
+- All intermediates are tracked in `intermediate_artifacts` list
+- Final `register_artifacts` step creates the registered artifact with full lineage
+- Base artifacts remain unchanged, preserving data integrity
+
+**Impact**: Ensures data provenance, enables step-by-step debugging, and maintains artifact immutability.
 
 ## 🔮 Future Enhancements
 
@@ -649,6 +767,8 @@ model = init_chat_model(
 - [ ] Model training and prediction pipelines
 - [ ] Automated A/B testing for transformations
 - [ ] Natural language query interface for results
+- [ ] Checkpoint/resume for long-running workflows
+- [ ] Artifact garbage collection (auto-cleanup of old intermediates)
 
 ## 📝 License
 
@@ -664,4 +784,6 @@ For issues and questions, please open a GitHub issue or contact the maintainers.
 
 ---
 
-**Built with**: LangGraph, LangChain, Pandas, Matplotlib, Pydantic
+**Built with**: LangGraph, LangChain, Pandas, Matplotlib, Seaborn, Pydantic
+
+**Version**: 1.1.0 (Fixed intermediate artifact handling)

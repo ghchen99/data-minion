@@ -1,4 +1,3 @@
-- [ ] Bug for intial artifact being overwritten?
 - [ ] Better data storage structure, datasets > threads > artifacts
 - [ ] Convert static runs into dynamic API
 - [ ] Create frontend
