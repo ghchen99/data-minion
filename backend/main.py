@@ -373,47 +373,50 @@ async def generate_python_code(state: DatasetAgentState) -> Dict:
 
     # Different prompts based on tool type
     if state["tool_route"].primary_tool == "visualization":
-        code_prompt = f"""
-You are a data visualization expert using matplotlib and seaborn.
+        code_prompt = f"""You are a data visualization expert. Create a publication-quality plot using matplotlib and seaborn.
 
 Dataset schema:
 {schema_text}
+Rows: {len(df)}
 
-Number of rows: {len(df)}
+Task: {state['reformulated_prompt']}
 
-Task:
-{state['reformulated_prompt']}
+Requirements:
+- Import necessary libraries (matplotlib.pyplot as plt, seaborn as sns, pandas as pd, numpy as np if needed)
+- Use the existing DataFrame variable `df` - it is already loaded
+- CRITICAL: Do NOT create sample data or mock DataFrames - work with the provided `df` variable
+- Use seaborn's default styling (sns.set_theme() or sns.set_style()) for polished visuals
+- Choose appropriate plot type for the data (e.g., sns.scatterplot, sns.barplot, sns.lineplot, sns.heatmap, sns.violinplot)
+- Set clear title, axis labels, and legend where appropriate
+- Handle categorical vs numerical data appropriately
+- Use color palettes effectively (e.g., 'viridis', 'husl', 'Set2')
+- Save figure to variable `fig` using `fig = plt.gcf()` or `fig, ax = plt.subplots()`
+- Do NOT call plt.show() or print anything
 
-Generate Python code that:
-- Loads the DataFrame as `df`
-- Creates visualization using matplotlib/seaborn
-- Saves the figure to a variable `fig`
-- Does NOT call plt.show()
-- Does NOT print anything
+Return only executable Python code, no markdown backticks or explanations."""
 
-Return only clean Python code, no markdown backticks.
-"""
     else:
-        code_prompt = f"""
-You are a senior Python pandas engineer.
+        code_prompt = f"""You are an expert pandas engineer. Write robust, idiomatic pandas code.
 
 Dataset schema:
 {schema_text}
+Rows: {len(df)}
 
-Number of rows: {len(df)}
+Task: {state['reformulated_prompt']}
 
-Task:
-{state['reformulated_prompt']}
+Requirements:
+- Import pandas as pd and numpy as np if needed
+- Use the existing DataFrame variable `df` - it is already loaded
+- CRITICAL: Do NOT create sample data or mock DataFrames - work with the provided `df` variable
+- Modify DataFrame variable `df` in-place where possible
+- Handle missing values explicitly (dropna, fillna, or handle appropriately for the task)
+- Use vectorized operations (avoid loops)
+- Handle edge cases: empty groups, division by zero, type mismatches
+- Use appropriate dtypes (convert strings to datetime/category if beneficial)
+- Chain operations efficiently using method chaining where readable
+- Do NOT print, display, or return anything
 
-Generate Python code that:
-- Modifies the DataFrame variable `df` in-place
-- Does NOT print anything
-- Does NOT return anything
-- Uses only pandas operations
-- Handles edge cases (null values, etc.)
-
-Return only clean Python code, no markdown backticks.
-"""
+Return only executable Python code, no markdown backticks or explanations."""
 
     response = await model.ainvoke(code_prompt)
     code = response.content.strip()
