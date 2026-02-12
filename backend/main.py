@@ -939,7 +939,7 @@ async def main():
 
     initial_state: DatasetAgentState = {
         "dataset_id": dataset_id,
-        "original_prompt": "Remove rows where name or sales is missing, then group by region and product to calculate total sales, average sales, and count.",
+        "original_prompt": "Create a new column 'sales_category' that labels sales as 'Low' (<100), 'Medium' (100-200), or 'High' (>200), then create a bar chart showing the count of each category by region.",
         "thread_id": "thread_123",
     }
 
