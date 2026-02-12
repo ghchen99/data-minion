@@ -1,6 +1,4 @@
-- [ ] Split single python code gen into multiple steps for auditability, engineeering > analysis > visuals > reporting
-- [ ] Map out workflow for manipulating data with parallel, conditions, routing etc. maybe a planner
-- [ ] Better validation for code gen and execution with retries (consider parallel + aggregate?)
+- [ ] Bug for intial artifact being overwritten?
 - [ ] Better data storage structure, datasets > threads > artifacts
 - [ ] Convert static runs into dynamic API
 - [ ] Create frontend

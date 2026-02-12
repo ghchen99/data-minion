@@ -8,6 +8,7 @@ Production-grade LangGraph Data Agent with:
 - Schema validation
 - Tool routing
 - Comprehensive state tracking
+- FIXED: Proper intermediate artifact creation (no overwriting)
 """
 
 from typing import TypedDict, Optional, Dict, Any, List, Literal, Annotated
@@ -449,7 +450,7 @@ Return only executable Python code, no markdown backticks or explanations."""
 
 
 async def execute_python_code(state: DatasetAgentState) -> Dict:
-    """Execute generated code with error handling"""
+    """Execute generated code with error handling - FIXED to create intermediate artifacts"""
     writer = get_stream_writer()
     writer({"status": "Executing generated code..."})
 
@@ -490,7 +491,7 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
             else:
                 raise ValueError("Visualization code did not produce a 'fig' variable")
         
-        # Handle data transformation artifacts
+        # Handle data transformation artifacts - FIXED: Create new intermediate artifact
         else:
             # Find the modified DataFrame
             df_vars = [v for v in local_ns.values() if isinstance(v, pd.DataFrame)]
@@ -502,14 +503,31 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
             # Extract schema after execution
             schema_after = extract_schema(result_df)
             
-            # Save transformed data back to artifact
-            save_dataframe(result_df, state["artifact_id"])
+            # FIXED: Create NEW intermediate artifact instead of overwriting input
+            intermediate_artifact_id = generate_id("intermediate")
+            save_dataframe(result_df, intermediate_artifact_id)
+            
+            # Save metadata for this intermediate artifact
+            intermediate_meta = {
+                "id": intermediate_artifact_id,
+                "dataset_id": state["dataset_id"],
+                "thread_id": state["thread_id"],
+                "type": "intermediate_artifact",
+                "step_id": current_step.step_id,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "parent_artifact": state["artifact_id"],
+                "schema": schema_after
+            }
+            save_json(intermediate_meta, os.path.join(ARTIFACT_DIR, f"{intermediate_artifact_id}.json"))
             
             writer({"status": f"Code executed successfully, {len(result_df)} rows"})
+            writer({"status": f"Created intermediate artifact: {intermediate_artifact_id}"})
             
             return {
+                "artifact_id": intermediate_artifact_id,  # FIXED: Update state to point to new artifact
                 "schema_after": schema_after,
-                "execution_error": None
+                "execution_error": None,
+                "intermediate_artifacts": [intermediate_artifact_id]
             }
 
     except Exception as e:
@@ -694,19 +712,21 @@ async def register_artifacts(state: DatasetAgentState) -> Dict:
         writer({"status": "Skipping artifact registration due to errors"})
         return {}
 
-    # Register main data artifact
+    # The current artifact_id now points to the final transformed data
     df = load_dataframe(state["artifact_id"])
-    new_artifact_id = generate_id("artifact")
-    save_dataframe(df, new_artifact_id)
+    
+    # Create a final artifact with complete metadata
+    final_artifact_id = generate_id("artifact")
+    save_dataframe(df, final_artifact_id)
 
     # Build comprehensive metadata
     artifact_meta = {
-        "id": new_artifact_id,
+        "id": final_artifact_id,
         "dataset_id": state["dataset_id"],
         "thread_id": state["thread_id"],
         "type": "derived_dataset",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "lineage": [state["artifact_id"]],
+        "lineage": state.get("intermediate_artifacts", []),  # Track all intermediate steps
         "transformation_type": "multi_step_plan",
         "plan_summary": state["plan"].clarified_request,
         "steps_executed": state["completed_steps"],
@@ -719,34 +739,33 @@ async def register_artifacts(state: DatasetAgentState) -> Dict:
         }
     }
 
-    artifact_path = os.path.join(ARTIFACT_DIR, f"{new_artifact_id}.json")
+    artifact_path = os.path.join(ARTIFACT_DIR, f"{final_artifact_id}.json")
     save_json(artifact_meta, artifact_path)
 
     # Update dataset metadata
     dataset_meta_path = os.path.join(DATASET_DIR, f"{state['dataset_id']}.json")
     dataset_meta = load_json(dataset_meta_path)
-    dataset_meta["artifacts"].append(new_artifact_id)
+    dataset_meta["artifacts"].append(final_artifact_id)
     save_json(dataset_meta, dataset_meta_path)
 
     # Register visualization artifacts if any
-    viz_artifacts = []
-    for img_id in state.get("intermediate_artifacts", []):
+    viz_artifacts = [a for a in state.get("intermediate_artifacts", []) if a.startswith("chart_")]
+    for img_id in viz_artifacts:
         viz_meta = {
             "id": img_id,
             "type": "chart",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "related_to": new_artifact_id
+            "related_to": final_artifact_id
         }
         viz_path = os.path.join(IMAGE_DIR, f"{img_id}.json")
         save_json(viz_meta, viz_path)
-        viz_artifacts.append(img_id)
 
-    writer({"status": f"✓ Registered artifact {new_artifact_id}"})
+    writer({"status": f"✓ Registered final artifact {final_artifact_id}"})
     if viz_artifacts:
         writer({"status": f"✓ Registered {len(viz_artifacts)} visualizations"})
 
     return {
-        "new_artifact_ids": [new_artifact_id] + viz_artifacts
+        "new_artifact_ids": [final_artifact_id] + viz_artifacts
     }
 
 
@@ -769,7 +788,12 @@ async def generate_summary(state: DatasetAgentState) -> Dict:
     ]
     
     if state.get("new_artifact_ids"):
-        summary_parts.append(f"✓ Generated {len(state['new_artifact_ids'])} artifacts")
+        final_artifacts = [a for a in state["new_artifact_ids"] if a.startswith("artifact_")]
+        viz_artifacts = [a for a in state["new_artifact_ids"] if a.startswith("chart_")]
+        if final_artifacts:
+            summary_parts.append(f"✓ Generated final artifact: {final_artifacts[0]}")
+        if viz_artifacts:
+            summary_parts.append(f"✓ Generated {len(viz_artifacts)} visualization(s)")
     
     # Schema changes summary
     if state.get("schema_validation"):
