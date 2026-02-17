@@ -28,6 +28,7 @@ const nodeConfig: Record<string, { icon: any, color: string, bgColor: string, la
     validate_schema: { icon: Info, color: "text-teal-600", bgColor: "bg-teal-50", label: "Validating Schema" },
     register_artifacts: { icon: BarChart3, color: "text-indigo-600", bgColor: "bg-indigo-50", label: "Registering Artifacts" },
     generate_summary: { icon: FileJson, color: "text-blue-700", bgColor: "bg-blue-50", label: "Summary" },
+    fix_code: { icon: Code, color: "text-red-600", bgColor: "bg-red-50", label: "Fixing Code" },
 };
 
 export function LogEntry({ data }: LogEntryProps) {
@@ -83,6 +84,18 @@ export function LogEntry({ data }: LogEntryProps) {
                                             {msg}
                                         </p>
                                     ))}
+                                </div>
+                            )}
+
+                            {update.python_code && (
+                                <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 shadow-inner">
+                                    <div className="bg-slate-800 px-3 py-1.5 flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Python Code</span>
+                                        <Code className="w-3 h-3 text-slate-400" />
+                                    </div>
+                                    <pre className="p-4 bg-slate-900 text-xs text-blue-300 font-mono overflow-x-auto whitespace-pre leading-relaxed">
+                                        {update.python_code}
+                                    </pre>
                                 </div>
                             )}
 

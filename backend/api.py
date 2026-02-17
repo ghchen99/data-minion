@@ -180,6 +180,8 @@ async def upload_and_run_stream(file: UploadFile, prompt: str = Form(...), owner
 
     async def event_stream():
         """Yield agent updates as JSON lines."""
+        all_collected_artifacts = dataset_meta["artifacts"].copy()
+        
         async for mode, chunk in agent.astream(
             initial_state,
             stream_mode=["values", "custom", "updates"],
@@ -196,16 +198,34 @@ async def upload_and_run_stream(file: UploadFile, prompt: str = Form(...), owner
                         "messages": node_output.get("messages", []),
                         "artifacts": node_output.get("new_artifact_ids", []) or node_output.get("intermediate_artifacts", []),
                     }
+                    
+                    # Capture python code content if generated/fixed
+                    if "python_code_file" in node_output:
+                        try:
+                            with open(node_output["python_code_file"], "r") as f:
+                                node_info["python_code"] = f.read()
+                        except Exception as e:
+                            node_info["python_code_error"] = str(e)
+
                     output["updates"].append(node_info)
-            # Yield as a JSON string line with newline separator
-            yield json.dumps(output) + "\n"
+            elif mode == "values":
+                # Update artifacts list from the state
+                current_artifacts = chunk.get("new_artifact_ids", []) + chunk.get("intermediate_artifacts", [])
+                for art_id in current_artifacts:
+                    if art_id not in all_collected_artifacts:
+                        all_collected_artifacts.append(art_id)
+                output["all_artifacts"] = all_collected_artifacts
+            
+            if output:
+                # Yield as a JSON string line with newline separator
+                yield json.dumps(output) + "\n"
             await asyncio.sleep(0)  # allow async context switch
 
         # Final summary at the end
         yield json.dumps({
             "dataset_id": dataset_id,
             "base_artifact_id": base_artifact_id,
-            "all_artifacts": dataset_meta["artifacts"] + initial_state.get("new_artifact_ids", []),
+            "all_artifacts": all_collected_artifacts,
             "final_summary": initial_state.get("analysis_summary", ""),
             "completed": True
         }) + "\n"

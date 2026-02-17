@@ -162,7 +162,7 @@ export default function HomePage() {
               <CardHeader className="bg-white border-b px-6 py-4">
                 <div className="flex items-center gap-2">
                   <Box className="w-5 h-5 text-minionYellow" />
-                  <CardTitle className="text-xl font-black uppercase text-slate-800">Generated Results</CardTitle>
+                  <CardTitle className="text-xl font-black uppercase text-slate-800">Generated Results {artifacts.length > 0 && `(${artifacts.length})`}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto p-8 bg-slate-50/30">
@@ -191,7 +191,7 @@ export default function HomePage() {
                         </div>
                       ) : (
                         <div className="p-4 bg-slate-900 rounded-xl overflow-hidden border-2 border-slate-800 shadow-2xl">
-                          <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap leading-relaxed">
+                          <pre className="p-4 bg-slate-900 text-xs text-blue-300 font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed">
                             {a}
                           </pre>
                         </div>
