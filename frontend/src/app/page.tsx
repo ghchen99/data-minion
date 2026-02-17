@@ -31,10 +31,15 @@ export default function HomePage() {
   const [streaming, setStreaming] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
-  const logEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTo({
+        top: logContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
   }, [logs]);
 
   // Grouping logic
@@ -166,7 +171,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
       {/* Mini Header */}
       <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-50">
         <div className="flex items-center gap-4">
@@ -213,7 +218,7 @@ export default function HomePage() {
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Process Log</h3>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          <div ref={logContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {logs.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-slate-300">
                 <Database className="w-12 h-12 mb-4 opacity-10" />
@@ -224,7 +229,6 @@ export default function HomePage() {
               {logs.map((l, i) => (
                 <LogEntry key={i} data={l} />
               ))}
-              <div ref={logEndRef} />
             </div>
           </div>
         </aside>
