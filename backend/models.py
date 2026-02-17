@@ -1,3 +1,4 @@
+# backend/models.py
 from typing import TypedDict, Optional, Dict, Any, List, Literal, Annotated
 from pydantic import BaseModel, Field
 import operator

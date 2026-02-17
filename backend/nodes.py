@@ -1,3 +1,4 @@
+# backend/nodes.py
 import os
 import json
 import pandas as pd
@@ -204,7 +205,8 @@ Requirements:
 - Import pandas as pd and numpy as np if needed
 - Use the existing DataFrame variable `df` - it is already loaded
 - CRITICAL: Do NOT create sample data or mock DataFrames - work with the provided `df` variable
-- Modify DataFrame variable `df` in-place where possible
+- Perform all transformations on `df` and assign your final result to `result_df`
+- CRITICAL: Always assign the final DataFrame to a variable named `result_df`
 - Handle missing values explicitly (dropna, fillna, or handle appropriately for the task)
 - Use vectorized operations (avoid loops)
 - Handle edge cases: empty groups, division by zero, type mismatches
@@ -293,7 +295,7 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
             if not df_vars:
                 raise ValueError("No DataFrame found after code execution")
             
-            result_df = df_vars[-1]  # Take the last one
+            result_df = local_ns.get("result_df")
             
             # Extract schema after execution
             schema_after = extract_schema(result_df)
@@ -386,8 +388,21 @@ async def check_execution_success(state: DatasetAgentState) -> str:
         return "fix_code"
     elif state.get("execution_error"):
         return "error_summary"
-    else:
-        return "mark_complete"
+    
+    # Treat unintentional schema changes as a fixable error
+    schema_val = state.get("schema_validation")
+    if schema_val and not schema_val.is_intentional and state["retry_count"] < 2:
+        # Inject a descriptive error so fix_code_with_error has context
+        state["execution_error"] = (
+            f"Unintentional schema change detected: "
+            f"added={schema_val.columns_added}, "
+            f"removed={schema_val.columns_removed}, "
+            f"dtype changes={schema_val.dtypes_changed}. "
+            f"Please fix the code to avoid unintended schema modifications."
+        )
+        return "fix_code"
+    
+    return "mark_complete"
 
 
 async def fix_code_with_error(state: DatasetAgentState) -> Dict:
