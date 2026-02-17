@@ -12,7 +12,7 @@ load_dotenv()
 # - Supports streaming
 # - Emits token-level events when used with stream_mode="messages"
 model = init_chat_model(
-    "azure_openai:gpt-4.1",
+    "azure_openai:gpt-4o",
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
 )
 
