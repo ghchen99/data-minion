@@ -236,6 +236,18 @@ from fastapi.staticfiles import StaticFiles
 
 app.mount("/static/images", StaticFiles(directory=IMAGE_DIR), name="static_images")
 
+import math
+
+def sanitize_for_json(obj):
+    """Recursively replace NaN/inf with None so JSONResponse doesn't explode."""
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    elif isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return None
+    return obj
+
 @app.get("/artifacts/{artifact_id}")
 async def get_artifact(artifact_id: str):
     """
@@ -263,6 +275,8 @@ async def get_artifact(artifact_id: str):
     if os.path.exists(csv_path):
         try:
             df_sample = pd.read_csv(csv_path, nrows=10)
+            # Replace NaN/inf with None so json.dumps doesn't choke
+            df_sample = df_sample.where(pd.notnull(df_sample), None)
             data["sample_data"] = df_sample.to_dict(orient="records")
             data["columns"] = list(df_sample.columns)
             data["type"] = "dataset"
@@ -272,7 +286,7 @@ async def get_artifact(artifact_id: str):
     if not data and not os.path.exists(artifact_json_path) and not os.path.exists(csv_path):
         return JSONResponse(status_code=404, content={"error": "Artifact not found"})
     
-    return JSONResponse(content=data)
+    return JSONResponse(content=sanitize_for_json(data))
 
 
 # =======================
