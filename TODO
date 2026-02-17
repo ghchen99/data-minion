@@ -1,5 +1,4 @@
-- [ ] Initial query reformulation
-- [ ] Better validation for code gen and execution with retries
-- [ ] Better data storage structure, datasets > threads > artifacts
-- [ ] Convert static runs into dynamic API
-- [ ] Create frontend
+- [ ] Fix colour schemes
+- [ ] Improve information display of all the streams and updates
+- [ ] Add testing to nodes
+- [ ] Agent eval
