@@ -232,23 +232,47 @@ async def upload_and_run_stream(file: UploadFile, prompt: str = Form(...), owner
 
     return StreamingResponse(event_stream(), media_type="application/json")
 
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/static/images", StaticFiles(directory=IMAGE_DIR), name="static_images")
+
 @app.get("/artifacts/{artifact_id}")
 async def get_artifact(artifact_id: str):
     """
     Fetch artifact details.
-    For chart images, returns JSON with file path (can be served via static route in frontend).
+    For chart images, returns JSON with file path.
+    For datasets, returns JSON with metadata and a sample of rows.
     """
     artifact_json_path = os.path.join(ARTIFACT_DIR, f"{artifact_id}.json")
+    csv_path = os.path.join(ARTIFACT_DIR, f"{artifact_id}.csv")
     image_path = os.path.join(IMAGE_DIR, f"{artifact_id}.png")
 
+    data = {}
     if os.path.exists(artifact_json_path):
         data = load_json(artifact_json_path)
-        # Include image path if chart
-        if artifact_id.startswith("chart_") and os.path.exists(image_path):
-            data["image_path"] = f"/static/images/{artifact_id}.png"
-        return JSONResponse(content=data)
     else:
+        # If no JSON meta, create basic meta
+        data = {"id": artifact_id}
+
+    # Include image path if chart
+    if artifact_id.startswith("chart_") and os.path.exists(image_path):
+        data["image_path"] = f"/static/images/{artifact_id}.png"
+        data["type"] = "chart"
+    
+    # Include sample data if CSV
+    if os.path.exists(csv_path):
+        try:
+            df_sample = pd.read_csv(csv_path, nrows=10)
+            data["sample_data"] = df_sample.to_dict(orient="records")
+            data["columns"] = list(df_sample.columns)
+            data["type"] = "dataset"
+        except Exception as e:
+            data["error"] = f"Error reading CSV: {str(e)}"
+
+    if not data and not os.path.exists(artifact_json_path) and not os.path.exists(csv_path):
         return JSONResponse(status_code=404, content={"error": "Artifact not found"})
+    
+    return JSONResponse(content=data)
 
 
 # =======================

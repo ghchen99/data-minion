@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogEntry } from "@/components/LogEntry";
+import { ArtifactResult } from "@/components/ArtifactResult";
 import { FileUp, Sparkles, Loader2, Database, Box, Activity } from "lucide-react";
 
 export default function HomePage() {
@@ -175,28 +176,8 @@ export default function HomePage() {
                   </div>
                 )}
                 <div className="grid grid-cols-1 gap-8">
-                  {artifacts.map((a, i) => (
-                    <div key={i} className="group relative bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300">
-                      <div className="absolute top-4 right-4 bg-slate-100 text-[10px] font-mono font-bold px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity uppercase text-slate-500">
-                        {a.startsWith("chart_") ? "Visualization" : "Dataset"}
-                      </div>
-
-                      {a.startsWith("chart_") ? (
-                        <div className="bg-slate-50 rounded-xl overflow-hidden p-2 border border-slate-100 shadow-inner">
-                          <img
-                            src={`http://localhost:8000/static/images/${a}.png`}
-                            alt={a}
-                            className="w-full h-auto rounded-lg shadow-sm"
-                          />
-                        </div>
-                      ) : (
-                        <div className="p-4 bg-slate-900 rounded-xl overflow-hidden border-2 border-slate-800 shadow-2xl">
-                          <pre className="p-4 bg-slate-900 text-xs text-blue-300 font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                            {a}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
+                  {[...artifacts].reverse().map((a) => (
+                    <ArtifactResult key={a} artifactId={a} />
                   ))}
                 </div>
               </CardContent>
