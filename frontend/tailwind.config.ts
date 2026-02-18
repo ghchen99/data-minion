@@ -7,13 +7,9 @@ const config: Config = {
     ],
     theme: {
         extend: {
-            colors: {
-                minionYellow: "#FFEB3B",
-                minionBlue: "#2196F3",
-                minionWhite: "#FFFFFF",
-            },
             fontFamily: {
-                sans: ["Comic Neue", "sans-serif"],
+                sans: ["var(--font-geist-sans)", "sans-serif"],
+                mono: ["var(--font-geist-mono)", "monospace"],
             },
         },
     },
