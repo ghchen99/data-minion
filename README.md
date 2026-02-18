@@ -1,10 +1,8 @@
 # 🍌 Data Minion
 
-> **Transform raw data into insights with an intelligent, agentic workspace.**
+Data Minion is an agent-driven data processing system that bridges the gap between complex datasets and natural language. Using a production-grade **LangGraph** orchestrator, it intelligently cleans, analyzes, and visualizes data based on simple user prompts.
 
 ![Data Minion Hero](frontend/public/minion-main.png)
-
-Data Minion is an agent-driven data processing system that bridges the gap between complex datasets and natural language. Using a production-grade **LangGraph** orchestrator, it intelligently cleans, analyzes, and visualizes data based on simple user prompts.
 
 ---
 
@@ -81,9 +79,9 @@ Try asking Data Minion things like:
    ```
 2. Create and configure your `.env` file:
    ```bash
-   AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment
-   AZURE_OPENAI_ENDPOINT=your-endpoint
-   AZURE_OPENAI_API_KEY=your-api-key
+   OPENAI_DEPLOYMENT_NAME=your-deployment
+   OPENAI_ENDPOINT=your-endpoint
+   OPENAI_API_KEY=your-api-key
    ```
 3. Install dependencies and run the server:
    ```bash
