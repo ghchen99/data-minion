@@ -2,6 +2,7 @@
 import os
 import json
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime, timezone
@@ -259,6 +260,7 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
     local_ns = {
         "df": df.copy(),  # Work on a copy
         "pd": pd,
+        "np": np,
         "plt": plt,
         "sns": sns,
         "fig": None
@@ -268,7 +270,7 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
         with open(state["python_code_file"]) as f:
             code = f.read()
         
-        exec(code, {}, local_ns)
+        exec(code, local_ns)
 
         # Handle visualization artifacts
         if state["tool_route"].primary_tool == "visualization":
