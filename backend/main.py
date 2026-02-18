@@ -17,18 +17,7 @@ async def main():
     # Setup example dataset
     dataset_id = generate_id("ds")
     
-    df = pd.DataFrame({
-        "name": ["Alice", "Bob", None, "Diana", "Eve", "Frank", None,
-                "George", "Hannah", "Ian", "Jane", "Kyle", "Laura", "Mike", "Nina", "Oscar", None, "Paula", "Quinn", "Rita"],
-        "sales": [100, 150, 200, None, 50, 300, 120,
-                220, 180, None, 90, 130, 160, 210, None, 140, 170, 200, None, 190],
-        "region": ["West", "East", "East", "West", "North", "East", "South",
-                "North", "South", "West", "East", "North", "West", "East", "South", "North", "West", "South", "East", "North"],
-        "product": ["A", "B", "A", "C", "B", "A", "C",
-                    "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B"],
-        "date": ["2026-01-01", "2026-01-02", "2026-01-02", "2026-01-03", None, "2026-01-01", "2026-01-03",
-                "2026-01-04", "2026-01-05", "2026-01-05", "2026-01-06", "2026-01-07", None, "2026-01-08", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-10", None, "2026-01-11"]
-    })
+    df = pd.read_csv("../sample-data/cardiovascular-risk.csv")    
     
     # Save original dataset
     original_file_path = os.path.join(DATASET_DIR, f"{dataset_id}_original.csv")
@@ -36,7 +25,7 @@ async def main():
 
     dataset_meta = {
         "id": dataset_id,
-        "name": "Sales Demo Dataset",
+        "name": "Cardiovascular Risk Dataset",
         "original_file": original_file_path,
         "schema": list(df.columns),
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -70,7 +59,7 @@ async def main():
 
     initial_state: DatasetAgentState = {
         "dataset_id": dataset_id,
-        "original_prompt": "Create a new column 'sales_category' that labels sales as 'Low' (<100), 'Medium' (100-200), or 'High' (>200), then create a bar chart showing the count of each category by region.",
+        "original_prompt": "Visualize pairwise relationships among all numeric health variables, colored by cardiovascular risk.",
         "thread_id": "thread_123",
     }
 
