@@ -112,15 +112,16 @@ export default function HomePage() {
   if (!isStarted) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        {/* Subtle grid */}
+        {/* Subtle grid background */}
         <div
-          className="absolute inset-0 opacity-[0.04]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage:
               "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
             backgroundSize: "48px 48px",
           }}
         />
+
         {/* Radial glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-zinc-800/60 rounded-full blur-[120px] pointer-events-none" />
 
@@ -129,7 +130,9 @@ export default function HomePage() {
           <div className="flex justify-center">
             <div className="inline-flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/60 px-3.5 py-1.5 rounded-full text-zinc-400">
               <Sparkles className="w-3 h-3 fill-zinc-400" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">Data Minion v1.0</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">
+                Data Minion v1.0
+              </span>
             </div>
           </div>
 
@@ -140,9 +143,6 @@ export default function HomePage() {
               <br />
               <span className="text-zinc-400">about your data.</span>
             </h1>
-            <p className="text-zinc-500 text-sm max-w-xs mx-auto leading-relaxed">
-              Upload a CSV, describe what you want. The agent writes code and returns charts and insights.
-            </p>
           </div>
 
           {/* Card */}
@@ -152,53 +152,59 @@ export default function HomePage() {
               <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.18em]">
                 Dataset
               </label>
-              <div className="relative">
+              <div className="relative h-11 flex items-center bg-zinc-800/60 border border-zinc-700/60 rounded-xl overflow-hidden">
                 <Input
                   type="file"
                   accept=".csv"
-                  className="h-11 cursor-pointer bg-zinc-800/60 border-zinc-700/60 text-zinc-300 rounded-xl
-                    file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0
-                    file:text-xs file:font-semibold file:bg-zinc-700 file:text-zinc-300
-                    hover:file:bg-zinc-600 focus-visible:ring-zinc-500 transition-all"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                 />
-                {!file && (
-                  <FileUp className="absolute right-3.5 top-3 w-4 h-4 text-zinc-600 pointer-events-none" />
-                )}
+                <div className="flex items-center justify-between w-full px-3.5 text-zinc-300 text-sm">
+                  {file ? file.name : "No file chosen"}
+                  <div className="bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded-lg text-xs font-semibold">
+                    Choose file
+                  </div>
+                </div>
               </div>
               {file && (
-                <p className="text-[11px] text-emerald-400 flex items-center gap-1.5 ml-1">
+                <p className="text-[11px] text-emerald-400 flex items-center gap-1.5 ml-1 animate-in fade-in">
                   <CheckCircle2 className="w-3 h-3" />
-                  {file.name}
+                  {file.name} uploaded
                 </p>
               )}
             </div>
 
-            {/* Prompt */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.18em]">
-                Question
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600 pointer-events-none" />
-                <Input
-                  type="text"
-                  placeholder="e.g. Show me the top 10 products by revenue"
-                  value={prompt}
-                  className="h-11 pl-10 bg-zinc-800/60 border-zinc-700/60 text-zinc-200 placeholder:text-zinc-600
-                    rounded-xl focus-visible:ring-zinc-500 focus-visible:border-zinc-500 transition-all"
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleUpload()}
-                />
+            {/* Question input: only visible after file upload */}
+            {file && (
+              <div className="space-y-2 animate-in fade-in delay-100">
+                <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.18em]">
+                  Question
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600 pointer-events-none" />
+                  <Input
+                    type="text"
+                    placeholder="e.g. Show me the top 10 products by revenue"
+                    value={prompt}
+                    className="h-11 pl-10 bg-zinc-800/60 border-zinc-700/60 text-zinc-200 placeholder:text-zinc-600
+                      rounded-xl focus-visible:ring-zinc-500 focus-visible:border-zinc-500 transition-all"
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleUpload()}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* CTA */}
             <Button
               onClick={handleUpload}
               disabled={!file || !prompt}
-              className="w-full h-11 bg-white hover:bg-zinc-100 text-zinc-900 font-semibold rounded-xl
-                disabled:opacity-20 disabled:cursor-not-allowed transition-all group text-sm"
+              className={cn(
+                "w-full h-11 text-sm font-semibold rounded-xl transition-all group",
+                !file || !prompt
+                  ? "bg-zinc-700 text-zinc-400 cursor-not-allowed opacity-50"
+                  : "bg-white hover:bg-zinc-100 text-zinc-900"
+              )}
             >
               Run Analysis
               <ChevronRight className="w-4 h-4 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
@@ -208,6 +214,7 @@ export default function HomePage() {
       </div>
     );
   }
+
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   const tabs: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
