@@ -182,11 +182,12 @@ Requirements:
 - Import necessary libraries (matplotlib.pyplot as plt, seaborn as sns, pandas as pd, numpy as np if needed)
 - Use the existing DataFrame variable `df` - it is already loaded
 - CRITICAL: Do NOT create sample data or mock DataFrames - work with the provided `df` variable
+- Handle categorical filters robustly: normalize strings with .str.lower()/.str.strip() before comparison
 - Use seaborn's default styling (sns.set_theme() or sns.set_style()) for polished visuals
+- Use one of these dark-friendly color palettes: 'mako', 'rocket', 'flare', 'crest', 'magma', or sns.color_palette("husl", n) for categorical
 - Choose appropriate plot type for the data (e.g., sns.scatterplot, sns.barplot, sns.lineplot, sns.heatmap, sns.violinplot)
 - Set clear title, axis labels, and legend where appropriate
 - Handle categorical vs numerical data appropriately
-- Use color palettes effectively (e.g., 'viridis', 'husl', 'Set2')
 - Save figure to variable `fig` using `fig = plt.gcf()` or `fig, ax = plt.subplots()`
 - Do NOT call plt.show() or print anything
 
@@ -319,6 +320,28 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
             
             writer({"status": f"Code executed successfully, {len(result_df)} rows"})
             writer({"status": f"Created intermediate artifact: {intermediate_artifact_id}"})
+
+            try:
+                if len(result_df) == 0:
+                    error_msg = (
+                        f"Code execution dropped all {len(df)} rows. "
+                        "Likely caused by case-sensitive filtering. "
+                        "Normalize values before filtering: df['col'].str.lower().isin({'yes','no'})"
+                    )
+                    writer({"status": f"⚠️ {error_msg}"})
+                    return {
+                        "execution_error": error_msg,
+                        "schema_after": state["schema_before"],
+                        "intermediate_artifacts": [],
+                        "artifact_id": state.get("artifact_id")  # fallback to original
+                    }
+            except Exception as e:
+                return {
+                    "execution_error": str(e),
+                    "schema_after": state["schema_before"],
+                    "intermediate_artifacts": [],
+                    "artifact_id": state.get("artifact_id")
+                }
             
             return {
                 "artifact_id": intermediate_artifact_id,  # FIXED: Update state to point to new artifact
@@ -339,8 +362,8 @@ async def validate_schema_change(state: DatasetAgentState) -> Dict:
     """Check if schema changes were intentional"""
     writer = get_stream_writer()
     
-    if state.get("execution_error"):
-        writer({"status": "Skipping schema validation due to execution error"})
+    if state.get("execution_error"): 
+        writer({"status": "Skipping schema validation due to execution error"}) 
         return {}
     
     schema_change = compare_schemas(state["schema_before"], state["schema_after"])

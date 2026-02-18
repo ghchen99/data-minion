@@ -14,6 +14,9 @@ from models import DatasetAgentState
 
 from fastapi.middleware.cors import CORSMiddleware
 
+os.makedirs(DATASET_DIR, exist_ok=True)
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
+os.makedirs(IMAGE_DIR, exist_ok=True)
 
 app = FastAPI(title="Agentic Data Processing API")
 
