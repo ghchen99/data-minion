@@ -184,8 +184,7 @@ Requirements:
 - Use the existing DataFrame variable `df` - it is already loaded
 - CRITICAL: Do NOT create sample data or mock DataFrames - work with the provided `df` variable
 - Handle categorical filters robustly: normalize strings with .str.lower()/.str.strip() before comparison
-- Use seaborn's default styling (sns.set_theme() or sns.set_style()) for polished visuals
-- Use one of these dark-friendly color palettes: 'mako', 'rocket', 'flare', 'crest', 'magma', or sns.color_palette("husl", n) for categorical
+- Use sns.set_theme(style="whitegrid", context="talk") and apply a clean, professional, and readable color palette (e.g., "deep", "muted", or "colorblind") appropriate for the data and audience.
 - Choose appropriate plot type for the data (e.g., sns.scatterplot, sns.barplot, sns.lineplot, sns.heatmap, sns.violinplot)
 - Set clear title, axis labels, and legend where appropriate
 - Handle categorical vs numerical data appropriately

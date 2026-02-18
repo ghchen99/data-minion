@@ -1,3 +1,2 @@
-- [ ] Nicer data upload and question panel
 - [ ] Make the agentic system more robust to filtering on columns where the discrete values are assumed? not just if asked in original question but for intermediate actions too. those need to be controlled at prompt level e.g., filter == 'yes' misses 'Yes'
 - [ ] Better diagram to plot and use case
