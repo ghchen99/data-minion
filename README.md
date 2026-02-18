@@ -25,21 +25,7 @@ Data Minion follows an **Orchestrator-Worker** pattern:
 2.  **API (FastAPI)**: Routes requests and serves artifacts.
 3.  **Agent (LangGraph)**: The "brain" that plans, routes to tools (pandas, visualization, analysis), executes code, and validates results.
 
-```mermaid
-graph TD
-    User([User Prompt]) --> Frontend[Next.js + Tailwind]
-    Frontend --> API[FastAPI Orchestrator]
-    API --> Agent[LangGraph Agent]
-    subgraph Agent Loop
-        Plan[Task Planning] --> Route[Tool Routing]
-        Route --> Gen[Code Generation]
-        Gen --> Exec[Execution & Validation]
-        Exec -- Error --> Fix[Auto-Fix Retry]
-        Fix --> Exec
-        Exec -- Success --> Artifact[Artifact Registration]
-    end
-    Artifact --> Preview[Frontend Preview]
-```
+![Data Minion Architecture](sample-data/arch.png)
 
 ---
 
