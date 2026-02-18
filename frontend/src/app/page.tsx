@@ -116,11 +116,11 @@ export default function HomePage() {
               <span className="text-sm font-black uppercase tracking-widest">Powered by Data Minion v1.0</span>
             </div>
             <h1 className="text-6xl md:text-7xl font-black text-slate-900 tracking-tight leading-none uppercase">
-              Analyze your <br />
+              Analyse your <br />
               <span className="text-minionBlue">Data</span> effortlessly.
             </h1>
             <p className="text-slate-500 text-xl max-w-xl mx-auto font-medium">
-              Upload any CSV file and ask questions in plain English. Our AI agent handles the code and visualizations.
+              Upload any CSV file and ask questions in plain English. Our AI agent handles the code and visualisations.
             </p>
           </div>
 
@@ -146,7 +146,7 @@ export default function HomePage() {
                   <Search className="absolute left-4 top-4.5 w-6 h-6 text-slate-300 pointer-events-none" />
                   <Input
                     type="text"
-                    placeholder="e.g., 'Visualize the correlation between price and demand'"
+                    placeholder="e.g., 'Show me the correlation between price and demand'"
                     value={prompt}
                     className="h-16 pl-14 text-lg border-2 border-slate-100 focus-visible:ring-minionBlue rounded-2xl bg-white shadow-sm"
                     onChange={(e) => setPrompt(e.target.value)}
