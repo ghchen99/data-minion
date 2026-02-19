@@ -59,7 +59,7 @@ async def main():
 
     initial_state: DatasetAgentState = {
         "dataset_id": dataset_id,
-        "original_prompt": "Visualize pairwise relationships among all numeric health variables, colored by cardiovascular risk.",
+        "original_prompt": "Can you make a chart that shows people’s age on the bottom and their cholesterol on the side, and use different colors to show if someone’s heart risk is low, medium, or high?",
         "thread_id": "thread_123",
     }
 

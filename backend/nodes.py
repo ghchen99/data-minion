@@ -2,6 +2,7 @@
 import os
 import json
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime, timezone
@@ -183,8 +184,35 @@ Requirements:
 - Use the existing DataFrame variable `df` - it is already loaded
 - CRITICAL: Do NOT create sample data or mock DataFrames - work with the provided `df` variable
 - Handle categorical filters robustly: normalize strings with .str.lower()/.str.strip() before comparison
-- Use seaborn's default styling (sns.set_theme() or sns.set_style()) for polished visuals
-- Use one of these dark-friendly color palettes: 'mako', 'rocket', 'flare', 'crest', 'magma', or sns.color_palette("husl", n) for categorical
+- Set dark-mode theme:
+    ```python
+    # Dark theme with aesthetic balance
+    sns.set_theme(style="darkgrid", context="talk")
+
+    # Figure and axes backgrounds
+    plt.rcParams["figure.facecolor"] = "#121212"  # dark gray instead of pure black
+    plt.rcParams["axes.facecolor"] = "#121212"
+    plt.rcParams["axes.edgecolor"] = "#BBBBBB"    # softer axis lines
+
+    # Ticks and labels
+    plt.rcParams["axes.labelcolor"] = "#FFFFFF"  # x and y axis titles
+    plt.rcParams["xtick.color"] = "#DDDDDD"       # soft white
+    plt.rcParams["ytick.color"] = "#DDDDDD"
+    plt.rcParams["text.color"] = "#FFFFFF"        # keep titles crisp
+
+    # Grid styling
+    plt.rcParams["grid.color"] = "#333333"        # subtle gray grid
+    plt.rcParams["grid.linestyle"] = "--"         # dashed grid for less visual weight
+
+    # Lines and markers
+    plt.rcParams["lines.linewidth"] = 2
+    plt.rcParams["lines.markersize"] = 6
+
+    # Optional: legend styling
+    plt.rcParams["legend.facecolor"] = "#1E1E1E"  # dark legend background
+    plt.rcParams["legend.edgecolor"] = "#BBBBBB"
+    plt.rcParams["legend.fontsize"] = "medium"
+    ```
 - Choose appropriate plot type for the data (e.g., sns.scatterplot, sns.barplot, sns.lineplot, sns.heatmap, sns.violinplot)
 - Set clear title, axis labels, and legend where appropriate
 - Handle categorical vs numerical data appropriately
@@ -259,6 +287,7 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
     local_ns = {
         "df": df.copy(),  # Work on a copy
         "pd": pd,
+        "np": np,
         "plt": plt,
         "sns": sns,
         "fig": None
@@ -268,7 +297,7 @@ async def execute_python_code(state: DatasetAgentState) -> Dict:
         with open(state["python_code_file"]) as f:
             code = f.read()
         
-        exec(code, {}, local_ns)
+        exec(code, local_ns)
 
         # Handle visualization artifacts
         if state["tool_route"].primary_tool == "visualization":

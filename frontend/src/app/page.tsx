@@ -18,6 +18,7 @@ import {
   Search,
   Terminal,
   CheckCircle2,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,9 @@ export default function HomePage() {
   const [isStarted, setIsStarted] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("charts");
+  const [dragOver, setDragOver] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (logContainerRef.current) {
@@ -108,101 +111,217 @@ export default function HomePage() {
     setFile(null);
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped && dropped.name.endsWith(".csv")) setFile(dropped);
+  };
+
   // ── Landing Page ──────────────────────────────────────────────────────────
   if (!isStarted) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-        {/* Radial glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-zinc-800/60 rounded-full blur-[120px] pointer-events-none" />
+      <div className="min-h-screen bg-[#090909] flex overflow-hidden relative">
+        {/* Ambient glow bg */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-yellow-500/[0.03] blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[400px] rounded-full bg-orange-500/[0.04] blur-3xl" />
+        </div>
 
-        <div className="relative max-w-xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
-          {/* Badge */}
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/60 px-3.5 py-1.5 rounded-full text-zinc-400">
-              <Sparkles className="w-3 h-3 fill-zinc-400" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">Data Minion v1.0</span>
-            </div>
+        {/* ── Left: Hero image panel ── */}
+        <div className="hidden md:flex w-[52%] flex-shrink-0 relative items-center justify-center overflow-hidden border-r border-white/[0.04]">
+          {/* Diagonal accent stripe */}
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f0f0f_0%,#090909_60%)]" />
+
+          {/* Grid lines */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage:
+                "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+            }}
+          />
+
+          {/* Big label top-left */}
+          <div className="absolute top-8 left-8 flex items-center gap-2.5 z-10">
+            <div className="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]" />
+            <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/30">
+              Data Minion v1.0
+            </span>
           </div>
 
-          {/* Heading */}
-          <div className="text-center space-y-3">
-            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.05]">
-              Ask questions
-              <br />
-              <span className="text-zinc-400">about your data.</span>
-            </h1>
-            <p className="text-zinc-500 text-sm max-w-xs mx-auto leading-relaxed">
-              Upload a CSV, describe what you want. The agent writes code and returns charts and insights.
-            </p>
-          </div>
-
-          {/* Card */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
-            {/* File input */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.18em]">
-                Dataset
-              </label>
-              <div className="relative">
-                <Input
-                  type="file"
-                  accept=".csv"
-                  className="h-11 cursor-pointer bg-zinc-800/60 border-zinc-700/60 text-zinc-300 rounded-xl
-                    file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0
-                    file:text-xs file:font-semibold file:bg-zinc-700 file:text-zinc-300
-                    hover:file:bg-zinc-600 focus-visible:ring-zinc-500 transition-all"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                />
-                {!file && (
-                  <FileUp className="absolute right-3.5 top-3 w-4 h-4 text-zinc-600 pointer-events-none" />
-                )}
-              </div>
-              {file && (
-                <p className="text-[11px] text-emerald-400 flex items-center gap-1.5 ml-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {file.name}
-                </p>
-              )}
-            </div>
-
-            {/* Prompt */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.18em]">
-                Question
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600 pointer-events-none" />
-                <Input
-                  type="text"
-                  placeholder="e.g. Show me the top 10 products by revenue"
-                  value={prompt}
-                  className="h-11 pl-10 bg-zinc-800/60 border-zinc-700/60 text-zinc-200 placeholder:text-zinc-600
-                    rounded-xl focus-visible:ring-zinc-500 focus-visible:border-zinc-500 transition-all"
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleUpload()}
-                />
-              </div>
-            </div>
-
-            {/* CTA */}
-            <Button
-              onClick={handleUpload}
-              disabled={!file || !prompt}
-              className="w-full h-11 bg-white hover:bg-zinc-100 text-zinc-900 font-semibold rounded-xl
-                disabled:opacity-20 disabled:cursor-not-allowed transition-all group text-sm"
+          {/* Vertical label */}
+          <div className="absolute left-8 bottom-12 flex flex-col items-center gap-4 z-10">
+            <div className="w-px h-24 bg-gradient-to-b from-transparent to-white/10" />
+            <span
+              className="font-mono text-[9px] tracking-[0.3em] uppercase text-white/20"
+              style={{ writingMode: "vertical-rl" }}
             >
-              Run Analysis
-              <ChevronRight className="w-4 h-4 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
-            </Button>
+              AI-powered analysis
+            </span>
+          </div>
+
+          {/* Hero image — vertically centered */}
+          <div className="relative z-10 w-full flex items-center justify-center px-12">
+            <img
+              src="/minion-main.png"
+              alt="Data Minion"
+              className="w-full max-w-[560px] h-auto object-contain drop-shadow-2xl"
+              style={{ filter: "drop-shadow(0 20px 60px rgba(250,204,21,0.1))" }}
+            />
+          </div>
+        </div>
+
+        {/* ── Right: Form panel ── */}
+        <div className="flex-1 flex flex-col justify-center px-10 md:px-16 lg:px-20 py-16 relative z-10">
+          {/* Mobile badge */}
+          <div className="flex md:hidden items-center gap-2 mb-8">
+            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+            <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/30">
+              Data Minion v1.0
+            </span>
+          </div>
+
+          <div className="max-w-md w-full">
+            {/* Eyebrow */}
+            <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-yellow-400/60 mb-5">
+              Ask questions about your data
+            </p>
+
+            {/* Headline */}
+            <h1
+              className="text-white font-black leading-[0.9] tracking-tight mb-6"
+              style={{ fontSize: "clamp(52px, 6vw, 80px)" }}
+            >
+              YOUR DATA.
+              <br />
+              <span className="text-yellow-400">UNLEASHED.</span>
+            </h1>
+
+            {/* Sub */}
+            <p className="text-white/30 text-sm leading-relaxed mb-10 max-w-sm">
+              Upload a CSV, ask anything in plain English — get charts, tables
+              and a full analysis in seconds.
+            </p>
+
+            {/* Card */}
+            <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm p-6 space-y-5">
+              {/* Top shimmer line */}
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent" />
+
+              {/* File drop zone */}
+              <div className="space-y-1.5">
+                <label className="font-mono text-[9px] tracking-[0.22em] uppercase text-white/30">
+                  Dataset
+                </label>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    "relative h-12 flex items-center rounded-xl border cursor-pointer transition-all duration-200 overflow-hidden group",
+                    dragOver
+                      ? "border-yellow-400/60 bg-yellow-400/[0.06]"
+                      : file
+                        ? "border-emerald-500/40 bg-emerald-500/[0.04]"
+                        : "border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15] hover:bg-white/[0.05]"
+                  )}
+                >
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  />
+                  <div className="flex items-center justify-between w-full px-4">
+                    <div className="flex items-center gap-2.5">
+                      <FileUp
+                        className={cn(
+                          "w-3.5 h-3.5 flex-shrink-0 transition-colors",
+                          file ? "text-emerald-400" : "text-white/20 group-hover:text-white/40"
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-sm truncate max-w-[200px] transition-colors",
+                          file ? "text-white/80" : "text-white/20"
+                        )}
+                      >
+                        {file ? file.name : "Drop CSV or click to browse"}
+                      </span>
+                    </div>
+                    {file ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <span className="text-[10px] font-mono text-white/20 group-hover:text-white/40 flex-shrink-0">
+                        Browse
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Question input — always visible, disabled until file chosen */}
+              <div className="space-y-1.5">
+                <label className="font-mono text-[9px] tracking-[0.22em] uppercase text-white/30">
+                  Question
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20 pointer-events-none" />
+                  <Input
+                    type="text"
+                    placeholder={file ? "e.g. Show me top 10 products by revenue" : "Upload a file first…"}
+                    value={prompt}
+                    disabled={!file}
+                    className={cn(
+                      "h-12 pl-10 rounded-xl text-sm text-white/80 placeholder:text-white/20 border transition-all",
+                      "bg-white/[0.03] border-white/[0.08]",
+                      "focus-visible:ring-0 focus-visible:border-yellow-400/50 focus-visible:bg-white/[0.05]",
+                      "disabled:opacity-40 disabled:cursor-not-allowed"
+                    )}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleUpload()}
+                  />
+                </div>
+              </div>
+
+              {/* CTA */}
+              <button
+                onClick={handleUpload}
+                disabled={!file || !prompt}
+                className={cn(
+                  "w-full h-12 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 flex items-center justify-center gap-2 font-mono uppercase",
+                  !file || !prompt
+                    ? "bg-white/[0.04] text-white/20 cursor-not-allowed border border-white/[0.06]"
+                    : "bg-yellow-400 text-black hover:bg-yellow-300 shadow-[0_0_30px_rgba(250,204,21,0.25)] hover:shadow-[0_0_40px_rgba(250,204,21,0.4)] active:scale-[0.99]"
+                )}
+              >
+                <Zap className="w-4 h-4" />
+                Run Analysis
+              </button>
+            </div>
+
+            {/* Footer stats */}
+            <div className="flex items-center gap-6 mt-8">
+              {[
+                { val: "~3s", label: "Avg. response" },
+                { val: "CSV", label: "Format" },
+                { val: "∞", label: "Questions" },
+              ].map((s, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  {i > 0 && <div className="w-px h-6 bg-white/[0.06]" />}
+                  <div>
+                    <div className="text-white font-black text-lg leading-none">{s.val}</div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/20 mt-0.5">
+                      {s.label}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -211,11 +330,7 @@ export default function HomePage() {
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   const tabs: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
-    {
-      id: "summary",
-      label: "Summary",
-      icon: <FileText className="w-3.5 h-3.5" />,
-    },
+    { id: "summary", label: "Summary", icon: <FileText className="w-3.5 h-3.5" /> },
     {
       id: "charts",
       label: "Charts",
@@ -268,8 +383,7 @@ export default function HomePage() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* ── Left: Terminal Log ─────────────────────────────────────────── */}
-        <aside className="w-72 xl:w-80 flex-shrink-0 border-r border-zinc-800/80 flex flex-col bg-zinc-900/50 hidden md:flex">
-          {/* Log header */}
+        <aside className="w-72 xl:w-80 flex-shrink-0 border-r border-zinc-800/80 flex-col bg-zinc-900/50 hidden md:flex">
           <div className="h-10 flex items-center gap-2 px-4 border-b border-zinc-800/80">
             <Terminal className="w-3.5 h-3.5 text-zinc-600" />
             <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-500">
@@ -280,7 +394,6 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Log entries */}
           <div
             ref={logContainerRef}
             className="flex-1 overflow-y-auto p-3 space-y-0.5 font-mono text-[11px]"
@@ -294,7 +407,6 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Log footer */}
           <div className="border-t border-zinc-800/80 px-4 py-3 flex items-center gap-2">
             <Activity className="w-3 h-3 text-zinc-700" />
             <span className="text-[10px] text-zinc-600 truncate">{file?.name}</span>
@@ -303,7 +415,6 @@ export default function HomePage() {
 
         {/* ── Right: Tabbed Artifact View ────────────────────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Tab bar */}
           <div className="h-11 border-b border-zinc-800/80 flex items-end px-5 gap-0.5 flex-shrink-0 bg-zinc-900/30">
             {tabs.map((tab) => (
               <button
@@ -334,9 +445,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Tab content */}
           <div className="flex-1 overflow-y-auto bg-zinc-950">
-            {/* Summary Tab */}
             {activeTab === "summary" && (
               <div className="p-8 max-w-3xl mx-auto">
                 {summary ? (
@@ -360,7 +469,6 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Charts Tab */}
             {activeTab === "charts" && (
               <div className="p-5">
                 {groupedArtifacts.figures.length === 0 ? (
@@ -386,7 +494,6 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Tables Tab */}
             {activeTab === "tables" && (
               <div className="p-5">
                 {groupedArtifacts.tables.length === 0 ? (
