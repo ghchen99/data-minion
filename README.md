@@ -1,8 +1,8 @@
 # 🍌 Data Minion
 
-Data Minion is an agent-driven data processing system that bridges the gap between complex datasets and natural language. Using a production-grade **LangGraph** orchestrator, it intelligently cleans, analyzes, and visualizes data based on simple user prompts.
+![Data Minion Hero](assets/demo.gif)
 
-![Data Minion Hero](frontend/public/minion-main.png)
+Data Minion is an agent-driven data processing system that bridges the gap between complex datasets and natural language. Using a **LangGraph** as an orchestrator, it intelligently cleans, analyzes, and visualises data based on simple user prompts.
 
 ---
 
@@ -23,9 +23,7 @@ Data Minion follows an **Orchestrator-Worker** pattern:
 
 1.  **Frontend (Next.js)**: A sleek dashboard for uploading CSVs and interacting with the agent.
 2.  **API (FastAPI)**: Routes requests and serves artifacts.
-3.  **Agent (LangGraph)**: The "brain" that plans, routes to tools (pandas, visualization, analysis), executes code, and validates results.
-
-![Data Minion Architecture](sample-data/arch.png)
+3.  **Agent (LangGraph)**: The "brain" that plans, routes to tools (pandas, visualisation, analysis), executes code, and validates results.
 
 ---
 
@@ -35,9 +33,8 @@ Try asking Data Minion things like:
 
 - *"Clean this dataset and remove rows with missing patient IDs."*
 - *"Show me a bar chart of cardiovascular risk by age group."*
-- *"Calculate the correlation between blood pressure and cholesterol levels."*
+- *"Calculate the correlation between weekday and weekend sales."*
 - *"Generate an executive summary of the key risk factors in this data."*
-- *"Create a new 'risk_score' column based on age and BMI."*
 
 ---
 
